@@ -97,22 +97,23 @@ function QRCodes() {
                         }
                         .qr-grid {
                             display: grid;
-                            grid-template-columns: repeat(3, 1fr);
-                            gap: 30px;
+                            grid-template-columns: repeat(auto-fill, minmax(1.4in, 1fr));
+                            gap: 10px;
                             margin-top: 20px;
                         }
                         .qr-item {
-                            text-align: center;
-                            padding: 20px;
-                            border: 2px solid #ddd;
-                            border-radius: 10px;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            padding: 10px;
+                            border: 1px dashed #ccc;
+                            border-radius: 4px;
                             page-break-inside: avoid;
                         }
                         .qr-item img {
-                            width: 100%;
-                            max-width: 250px;
-                            height: auto;
-                            margin-bottom: 10px;
+                            width: 1in;
+                            height: 1in;
+                            margin-bottom: 5px;
                         }
                         .qr-code {
                             font-size: 18px;
@@ -138,7 +139,7 @@ function QRCodes() {
                 </head>
                 <body>
                     <div class="header">
-                        <h1>QR Codes - Iska-Fest Attendance</h1>
+                        <h1>QR Codes - Isko Fest Attendance</h1>
                         <p>Total: ${qrCodes.length} QR Code(s) | Generated: ${new Date().toLocaleDateString()}</p>
                     </div>
                     <div class="qr-grid">
