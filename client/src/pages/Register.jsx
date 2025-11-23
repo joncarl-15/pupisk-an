@@ -72,7 +72,7 @@ function Register() {
                 qr_code_id: qrData._id,
                 ...formData
             })
-            toast.success('Attendance saved! Enjoy Iska-Fest!')
+            toast.success('Attendance saved! Enjoy Isko-Fest!')
             fetchQRData() // Refresh to show registered state
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to save attendance')
@@ -115,7 +115,7 @@ function Register() {
                 <GlassCard>
                     <div className="d-flex justify-content-between align-items-center mb-4">
                         <div>
-                            <p className="text-uppercase text-muted small mb-1">Iska-Fest Attendance</p>
+                            <p className="text-uppercase text-muted small mb-1">Isko-Fest Attendance</p>
                             <h3 className="mb-0">QR Code {qrData.code}</h3>
                         </div>
                         <span className={`badge badge-soft ${attendee ? 'badge-success-soft' : 'badge-warning-soft'}`}>
