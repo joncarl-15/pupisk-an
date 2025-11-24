@@ -26,8 +26,8 @@ function QRGenerator() {
     const handleGenerate = async (e) => {
         e.preventDefault()
 
-        if (quantity < 1 || quantity > 200) {
-            toast.error('Please generate between 1 and 200 QR codes per batch.')
+        if (quantity < 1 || quantity > 3000) {
+            toast.error('Please generate between 1 and 3000 QR codes per batch.')
             return
         }
 
@@ -71,12 +71,12 @@ function QRGenerator() {
                                 type="number"
                                 className="form-control"
                                 min="1"
-                                max="200"
+                                max="3000"
                                 value={quantity}
                                 onChange={(e) => setQuantity(parseInt(e.target.value))}
                                 required
                             />
-                            <small className="text-muted">Limit 200 per batch to keep things manageable.</small>
+                            <small className="text-muted">Limit 3000 per batch to keep things manageable.</small>
                         </div>
                         <div>
                             <label className="form-label">Batch label (optional)</label>

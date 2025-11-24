@@ -11,8 +11,8 @@ router.post('/generate', async (req, res) => {
         const { quantity, label } = req.body;
         const qty = parseInt(quantity);
 
-        if (!qty || qty < 1 || qty > 200) {
-            return res.status(400).json({ message: 'Quantity must be between 1 and 200' });
+        if (!qty || qty < 1 || qty > 3000) {
+            return res.status(400).json({ message: 'Quantity must be between 1 and 3000' });
         }
 
         const createdCodes = [];
@@ -41,7 +41,7 @@ router.post('/generate', async (req, res) => {
 // Get all QR codes (with attendee info)
 router.get('/', async (req, res) => {
     try {
-        const qrcodes = await QRCode.find().sort({ created_at: -1 }).limit(100);
+        const qrcodes = await QRCode.find().sort({ created_at: -1 }).limit(3000);
         // Fetch attendee info for each registered QR
         // This is a simple implementation; for large datasets, use aggregation
         const results = await Promise.all(qrcodes.map(async (qr) => {

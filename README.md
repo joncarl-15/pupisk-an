@@ -14,7 +14,7 @@ A modern, full-stack attendance management system built with the MERN stack (Mon
 - Quick action buttons
 
 ### 🎫 QR Code Management
-- Batch QR code generation (1-200 codes)
+- Batch QR code generation (1-3000 codes)
 - Custom batch labels
 - Download individual QR codes
 - **Download all QR codes as printable PDF**
@@ -351,7 +351,7 @@ VITE_API_URL=https://your-backend-url.vercel.app/api
 
 ### 1. Generate QR Codes
 1. Go to "QR Codes" page
-2. Enter quantity (1-200) and optional batch label
+2. Enter quantity (1-3000) and optional batch label
 3. Click "Generate Codes"
 4. Download individual codes or all as PDF
 
