@@ -11,7 +11,7 @@ const COURSES = [
     'DCVET', 'DCET', 'DEET', 'DIT', 'DOMT-LOM', 'DOMT-MOM', 'OUTSIDER'
 ]
 
-const YEAR_LEVELS = ['1st', '2nd', '3rd', '4th', 'Ladderize', 'Overstaying']
+const YEAR_LEVELS = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th']
 
 function Register() {
     const [searchParams] = useSearchParams()
