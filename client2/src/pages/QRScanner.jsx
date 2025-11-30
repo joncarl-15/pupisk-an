@@ -67,11 +67,16 @@ function QRScanner() {
                             qr_code_id: qrData._id
                         })
 
-                        // Refresh data to get updated time_out
-                        const updatedResponse = await api.get(`/qrcodes/${code}`)
+                        // Use the response from checkout directly instead of fetching again
+                        // The backend now returns the updated attendee object
+                        const updatedAttendee = checkoutResponse.data.attendee;
+
                         setScanResult({
                             type: 'checked_out',
-                            data: updatedResponse.data,
+                            data: {
+                                ...qrData,
+                                attendee: updatedAttendee
+                            },
                             code
                         })
                         toast.success('✅ Checked Out Successfully!')

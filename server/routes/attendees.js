@@ -18,19 +18,24 @@ router.post('/', async (req, res) => {
 
         // Check-out Logic
         if (qr.status === 'registered') {
-            const existingAttendee = await Attendee.findOne({ qr_code_id });
+            // Atomic check-out: Find attendee by QR ID where time_out is null, and set time_out
+            const updatedAttendee = await Attendee.findOneAndUpdate(
+                { qr_code_id, time_out: null },
+                { $set: { time_out: Date.now() } },
+                { new: true }
+            );
 
-            if (existingAttendee) {
-                if (!existingAttendee.time_out) {
-                    existingAttendee.time_out = Date.now();
-                    await existingAttendee.save();
-                    return res.status(200).json({ message: 'Checked Out', attendee: existingAttendee });
-                } else {
+            if (updatedAttendee) {
+                return res.status(200).json({ message: 'Checked Out', attendee: updatedAttendee });
+            } else {
+                // If not found with time_out: null, it means either not found or already checked out
+                const existingAttendee = await Attendee.findOne({ qr_code_id });
+                if (existingAttendee) {
                     return res.status(200).json({ message: 'Already Checked Out', attendee: existingAttendee });
                 }
+                // Fallback if status is registered but no attendee record found
+                return res.status(400).json({ message: 'QR Code already registered but no attendee record found.' });
             }
-            // Fallback if status is registered but no attendee record found (shouldn't happen ideally)
-            return res.status(400).json({ message: 'QR Code already registered but no attendee record found.' });
         }
 
         const attendee = new Attendee({
