@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { Html5QrcodeScanner } from 'html5-qrcode'
 import toast from 'react-hot-toast'
 import api from '../api/axios'
@@ -9,6 +9,8 @@ function QRScanner() {
     const [scanResult, setScanResult] = useState(null)
     const [loading, setLoading] = useState(false)
     const [isScanning, setIsScanning] = useState(false)
+    const lastScannedRef = useRef({ code: null, time: 0 })
+    const isProcessingRef = useRef(false)
 
     const startScanner = () => {
         if (scannerRef.current) return // Already started
@@ -33,6 +35,14 @@ function QRScanner() {
         }
     }
 
+    useEffect(() => {
+        return () => {
+            if (scannerRef.current) {
+                scannerRef.current.clear().catch(console.error)
+            }
+        }
+    }, [])
+
     const extractCode = (decodedText) => {
         const match = decodedText.match(/code=([A-Za-z0-9]+)/i)
         if (match) {
@@ -43,6 +53,19 @@ function QRScanner() {
 
     const onScanSuccess = async (decodedText) => {
         const code = extractCode(decodedText)
+        const now = Date.now()
+
+        // Prevent double scanning the same code within 5 seconds
+        if (code === lastScannedRef.current.code && now - lastScannedRef.current.time < 5000) {
+            return
+        }
+
+        // Prevent processing if already processing another scan
+        if (isProcessingRef.current) return
+
+        isProcessingRef.current = true
+        lastScannedRef.current = { code, time: now }
+
         setLoading(true)
         setScanResult({ type: 'loading', code, raw: decodedText })
 
@@ -102,6 +125,7 @@ function QRScanner() {
             toast.error('QR Code not found')
         } finally {
             setLoading(false)
+            isProcessingRef.current = false
         }
     }
 
