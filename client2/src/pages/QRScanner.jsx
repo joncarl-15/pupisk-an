@@ -75,7 +75,7 @@ function QRScanner() {
 
             // Check if QR is registered and has attendee
             if (qrData.status === 'registered' && qrData.attendee) {
-                // Check if already has time_out
+                // Check if already has time_out (Completed)
                 if (qrData.attendee.time_out) {
                     setScanResult({
                         type: 'already_out',
@@ -83,26 +83,42 @@ function QRScanner() {
                         code
                     })
                     toast.success('Already checked out!')
-                } else {
+                }
+                // Check if time_in is missing (Needs Time In)
+                else if (!qrData.attendee.time_in) {
+                    setScanResult({
+                        type: 'needs_time_in',
+                        data: qrData,
+                        code
+                    })
+                    // Don't auto time-in, wait for user confirmation
+                }
+                // Check if time_in is present but time_out is missing (Needs Time Out)
+                else {
                     // Automatically check out
                     try {
                         const checkoutResponse = await api.post('/attendees', {
                             qr_code_id: qrData._id
                         })
 
-                        // Use the response from checkout directly instead of fetching again
-                        // The backend now returns the updated attendee object
                         const updatedAttendee = checkoutResponse.data.attendee;
+                        const type = checkoutResponse.data.type; // 'time_out' or 'completed'
 
-                        setScanResult({
-                            type: 'checked_out',
-                            data: {
-                                ...qrData,
-                                attendee: updatedAttendee
-                            },
-                            code
-                        })
-                        toast.success('✅ Checked Out Successfully!')
+                        if (type === 'completed') {
+                            setScanResult({
+                                type: 'already_out',
+                                data: { ...qrData, attendee: updatedAttendee },
+                                code
+                            })
+                            toast.success('Already checked out!')
+                        } else {
+                            setScanResult({
+                                type: 'checked_out',
+                                data: { ...qrData, attendee: updatedAttendee },
+                                code
+                            })
+                            toast.success('✅ Checked Out Successfully!')
+                        }
                     } catch (error) {
                         setScanResult({
                             type: 'error',
@@ -138,9 +154,37 @@ function QRScanner() {
         return `${window.location.origin}/register?code=${code}`
     }
 
+    const handleTimeIn = async () => {
+        if (!scanResult || !scanResult.data) return;
+
+        setLoading(true);
+        try {
+            const response = await api.post('/attendees', {
+                qr_code_id: scanResult.data._id
+            });
+
+            const updatedAttendee = response.data.attendee;
+
+            setScanResult({
+                type: 'timed_in',
+                data: {
+                    ...scanResult.data,
+                    attendee: updatedAttendee
+                },
+                code: scanResult.code
+            });
+            toast.success('✅ Time In Recorded!');
+        } catch (error) {
+            toast.error('Failed to time in');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const formatDateTime = (date) => {
         if (!date) return '—'
         return new Date(date).toLocaleString('en-US', {
+            timeZone: 'Asia/Manila',
             month: 'short',
             day: 'numeric',
             year: 'numeric',
@@ -160,11 +204,12 @@ function QRScanner() {
                         <li>Grant camera permission when prompted.</li>
                         <li>Align the QR code within the highlighted box.</li>
                         <li>Hold steady around 15–25 cm from the lens.</li>
-                        <li><strong>First scan:</strong> Register/Time In</li>
-                        <li><strong>Second scan:</strong> Automatic Time Out</li>
+                        <li><strong>First scan:</strong> Register</li>
+                        <li><strong>Second scan:</strong> Time In (Requires confirmation)</li>
+                        <li><strong>Third scan:</strong> Time Out</li>
                     </ul>
-                    <div className="alert alert-info">
-                        <strong>Auto Check-Out:</strong> Scanning a registered QR code will automatically record time out.
+                    <div className="alert alert-warning">
+                        <strong>IMPORTANT:</strong> AFTER REGISTRATION DONT SCAN IT AGAIN TO PREVENT TIMING IN, 2ND SCAN WILL BE HOLD ON THE PROPER EVENT
                     </div>
 
                     <div className="d-grid gap-2">
@@ -265,6 +310,66 @@ function QRScanner() {
                                             <div className="col-12 col-md-6">
                                                 <label className="text-muted small mb-1">Time Out</label>
                                                 <div>{formatDateTime(scanResult.data.attendee.time_out)}</div>
+                                            </div>
+                                        </div>
+                                    </GlassCard>
+                                )}
+
+                                {scanResult.type === 'needs_time_in' && (
+                                    <GlassCard className="p-3">
+                                        <div className="alert alert-info mb-3">
+                                            <strong>Ready to Time In?</strong>
+                                        </div>
+                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                            <div>
+                                                <p className="text-uppercase text-muted small mb-1">QR Code</p>
+                                                <h5 className="mb-0">{scanResult.data.code}</h5>
+                                            </div>
+                                            <span className="badge badge-info-soft">Registered</span>
+                                        </div>
+
+                                        <div className="row g-3 mb-4">
+                                            <div className="col-12">
+                                                <label className="text-muted small mb-1">Name</label>
+                                                <div className="fw-semibold">{scanResult.data.attendee.full_name}</div>
+                                            </div>
+                                            <div className="col-12">
+                                                <label className="text-muted small mb-1">Course / Year</label>
+                                                <div>{scanResult.data.attendee.course} {scanResult.data.attendee.year_level}</div>
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            className="btn btn-primary w-100"
+                                            onClick={handleTimeIn}
+                                            disabled={loading}
+                                        >
+                                            {loading ? 'Processing...' : 'Proceed to Time In'}
+                                        </button>
+                                    </GlassCard>
+                                )}
+
+                                {scanResult.type === 'timed_in' && (
+                                    <GlassCard className="p-3">
+                                        <div className="alert alert-success mb-3">
+                                            <strong>✅ Time In Recorded!</strong>
+                                        </div>
+                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                            <div>
+                                                <p className="text-uppercase text-muted small mb-1">QR Code</p>
+                                                <h5 className="mb-0">{scanResult.data.code}</h5>
+                                            </div>
+                                            <span className="badge badge-success-soft">Timed In</span>
+                                        </div>
+
+                                        <div className="row g-3">
+                                            <div className="col-12 col-md-6">
+                                                <label className="text-muted small mb-1">Name</label>
+                                                <div className="fw-semibold">{scanResult.data.attendee.full_name}</div>
+                                            </div>
+                                            <div className="col-12 col-md-6">
+                                                <label className="text-muted small mb-1">Time In</label>
+                                                <div className="text-success fw-bold">{formatDateTime(scanResult.data.attendee.time_in)}</div>
                                             </div>
                                         </div>
                                     </GlassCard>

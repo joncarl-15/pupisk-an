@@ -16,26 +16,36 @@ router.post('/', async (req, res) => {
             return res.status(404).json({ message: 'QR Code not found' });
         }
 
-        // Check-out Logic
+        // Attendance Logic (3-Step Flow)
         if (qr.status === 'registered') {
-            // Atomic check-out: Find attendee by QR ID where time_out is null, and set time_out
-            const updatedAttendee = await Attendee.findOneAndUpdate(
-                { qr_code_id, time_out: null },
-                { $set: { time_out: Date.now() } },
-                { new: true }
-            );
+            // 1. Check if Time In is missing
+            const attendeeForTimeIn = await Attendee.findOne({ qr_code_id, time_in: null });
 
-            if (updatedAttendee) {
-                return res.status(200).json({ message: 'Checked Out', attendee: updatedAttendee });
-            } else {
-                // If not found with time_out: null, it means either not found or already checked out
-                const existingAttendee = await Attendee.findOne({ qr_code_id });
-                if (existingAttendee) {
-                    return res.status(200).json({ message: 'Already Checked Out', attendee: existingAttendee });
-                }
-                // Fallback if status is registered but no attendee record found
-                return res.status(400).json({ message: 'QR Code already registered but no attendee record found.' });
+            if (attendeeForTimeIn) {
+                // Perform Time In
+                attendeeForTimeIn.time_in = Date.now();
+                await attendeeForTimeIn.save();
+                return res.status(200).json({ message: 'Time In Recorded', attendee: attendeeForTimeIn, type: 'time_in' });
             }
+
+            // 2. Check if Time Out is missing (and Time In is present)
+            const attendeeForTimeOut = await Attendee.findOne({ qr_code_id, time_out: null });
+
+            if (attendeeForTimeOut) {
+                // Perform Time Out
+                attendeeForTimeOut.time_out = Date.now();
+                await attendeeForTimeOut.save();
+                return res.status(200).json({ message: 'Checked Out', attendee: attendeeForTimeOut, type: 'time_out' });
+            }
+
+            // 3. If both are set, it's already completed
+            const existingAttendee = await Attendee.findOne({ qr_code_id });
+            if (existingAttendee) {
+                return res.status(200).json({ message: 'Already Checked Out', attendee: existingAttendee, type: 'completed' });
+            }
+
+            // Fallback
+            return res.status(400).json({ message: 'QR Code already registered but no attendee record found.' });
         }
 
         const attendee = new Attendee({
@@ -87,8 +97,8 @@ router.get('/export', async (req, res) => {
             'Contact Number': attendee.contact_number || '',
             'Remarks': attendee.remarks || '',
             'QR Code': attendee.qr_code_id?.code || '',
-            'Time In': attendee.created_at ? new Date(attendee.created_at).toLocaleString() : '',
-            'Time Out': attendee.time_out ? new Date(attendee.time_out).toLocaleString() : ''
+            'Time In': attendee.time_in ? new Date(attendee.time_in).toLocaleString('en-US', { timeZone: 'Asia/Manila' }) : '',
+            'Time Out': attendee.time_out ? new Date(attendee.time_out).toLocaleString('en-US', { timeZone: 'Asia/Manila' }) : ''
         }));
 
         // Create workbook and worksheet

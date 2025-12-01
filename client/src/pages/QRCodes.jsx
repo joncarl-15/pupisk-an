@@ -9,6 +9,7 @@ function QRCodes() {
     const [statusFilter, setStatusFilter] = useState('')
     const [loading, setLoading] = useState(true)
     const [downloading, setDownloading] = useState(false)
+    const [isAdminUnlocked, setIsAdminUnlocked] = useState(false)
 
     useEffect(() => {
         fetchQRCodes()
@@ -168,6 +169,16 @@ function QRCodes() {
         }
     }
 
+    const handleUnlock = () => {
+        const password = prompt('Enter Admin Password to Unlock Actions:')
+        if (password === 'csc@20252026') {
+            setIsAdminUnlocked(true)
+            toast.success('Admin actions unlocked!')
+        } else if (password !== null) {
+            toast.error('Incorrect Password')
+        }
+    }
+
     const handleDeleteAll = async () => {
         const generatedCount = qrCodes.filter(qr => qr.status === 'generated').length
 
@@ -197,7 +208,22 @@ function QRCodes() {
                     <p className="mb-0 text-muted">Track every generated QR and its assignment.</p>
                 </div>
                 <div className="d-flex gap-2 flex-wrap">
-                    <Link className="btn btn-outline-light" to="/qr-generator">Generate QR</Link>
+                    {!isAdminUnlocked && (
+                        <button className="btn btn-outline-warning" onClick={handleUnlock}>
+                            Unlock Admin
+                        </button>
+                    )}
+                    <button
+                        className="btn btn-outline-light"
+                        onClick={() => {
+                            if (isAdminUnlocked) {
+                                window.location.href = '/qr-generator'
+                            }
+                        }}
+                        disabled={!isAdminUnlocked}
+                    >
+                        Generate QR
+                    </button>
                     <button
                         className="btn btn-primary"
                         onClick={handleDownloadAll}
@@ -208,7 +234,7 @@ function QRCodes() {
                     <button
                         className="btn btn-outline-danger"
                         onClick={handleDeleteAll}
-                        disabled={qrCodes.filter(qr => qr.status === 'generated').length === 0}
+                        disabled={!isAdminUnlocked || qrCodes.filter(qr => qr.status === 'generated').length === 0}
                     >
                         Delete All Generated
                     </button>

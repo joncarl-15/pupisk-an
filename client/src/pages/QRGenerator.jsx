@@ -9,6 +9,7 @@ function QRGenerator() {
     const [label, setLabel] = useState('')
     const [qrCodes, setQrCodes] = useState([])
     const [loading, setLoading] = useState(false)
+    const [isAdminUnlocked, setIsAdminUnlocked] = useState(false)
 
     useEffect(() => {
         fetchQRCodes()
@@ -26,6 +27,11 @@ function QRGenerator() {
     const handleGenerate = async (e) => {
         e.preventDefault()
 
+        if (!isAdminUnlocked) {
+            toast.error('Please unlock admin controls first')
+            return
+        }
+
         if (quantity < 1 || quantity > 3000) {
             toast.error('Please generate between 1 and 3000 QR codes per batch.')
             return
@@ -42,6 +48,16 @@ function QRGenerator() {
             toast.error(error.response?.data?.message || 'Failed to generate QR codes')
         } finally {
             setLoading(false)
+        }
+    }
+
+    const handleUnlock = () => {
+        const password = prompt('Enter Admin Password to Unlock Generation:')
+        if (password === 'csc@20252026') {
+            setIsAdminUnlocked(true)
+            toast.success('Generation unlocked!')
+        } else if (password !== null) {
+            toast.error('Incorrect Password')
         }
     }
 
@@ -87,9 +103,14 @@ function QRGenerator() {
                                 onChange={(e) => setLabel(e.target.value)}
                             />
                         </div>
-                        <button type="submit" className="btn btn-primary w-100" disabled={loading}>
+                        <button type="submit" className="btn btn-primary w-100" disabled={loading || !isAdminUnlocked}>
                             {loading ? 'Generating...' : 'Generate Codes'}
                         </button>
+                        {!isAdminUnlocked && (
+                            <button type="button" className="btn btn-outline-warning w-100" onClick={handleUnlock}>
+                                Unlock Generation
+                            </button>
+                        )}
                     </form>
                 </GlassCard>
             </div>

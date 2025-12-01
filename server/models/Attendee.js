@@ -37,6 +37,10 @@ const attendeeSchema = new mongoose.Schema({
         type: String,
         trim: true
     },
+    time_in: {
+        type: Date,
+        default: null
+    },
     time_out: {
         type: Date,
         default: null
