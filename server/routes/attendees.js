@@ -87,45 +87,87 @@ router.get('/export', async (req, res) => {
         const XLSX = require('xlsx');
         const attendees = await Attendee.find().populate('qr_code_id').sort({ created_at: -1 });
 
-        // Prepare data for Excel
-        const excelData = attendees.map(attendee => ({
-            'Full Name': attendee.full_name || '',
-            'Student Number': attendee.student_number || '',
-            'Course': attendee.course || '',
-            'Year Level': attendee.year_level || '',
-            'Email': attendee.email || '',
-            'Contact Number': attendee.contact_number || '',
-            'Remarks': attendee.remarks || '',
-            'QR Code': attendee.qr_code_id?.code || '',
-            'Time In': attendee.time_in ? new Date(attendee.time_in).toLocaleString('en-US', { timeZone: 'Asia/Manila' }) : '',
-            'Time Out': attendee.time_out ? new Date(attendee.time_out).toLocaleString('en-US', { timeZone: 'Asia/Manila' }) : ''
-        }));
+        // Course to Organization Mapping
+        const COURSE_TO_ORG_MAP = {
+            'BSAM': 'ABS',
+            'BSHM': 'HMS',
+            'BSIT': 'IBITS', 'DIT': 'IBITS',
+            'DCET': 'ICEPT',
+            'BSEE': 'IIEE', 'DEET': 'IIEE',
+            'BS-Bio': 'ILS',
+            'BSBA-FM': 'JFINEX',
+            'BSBA-MM': 'JME',
+            'BS-Account': 'JPIA',
+            'BPA': 'PADS', 'BPA-FA': 'PADS',
+            'BSND': 'PAN-YC',
+            'BSOA': 'PASOA',
+            'BSCE': 'PICE', 'DCVET': 'PICE',
+            'DOMT-LOM': 'SYNERTECH', 'DOMT-MOM': 'SYNERTECH',
+            'BS-Archi': 'UAPSA',
+            'BEED': 'YES', 'BSED': 'YES'
+        };
 
-        // Create workbook and worksheet
+        // Group attendees by Organization
+        const attendeesByOrg = {};
+
+        attendees.forEach(attendee => {
+            const org = COURSE_TO_ORG_MAP[attendee.course] || 'Others';
+            if (!attendeesByOrg[org]) {
+                attendeesByOrg[org] = [];
+            }
+            attendeesByOrg[org].push(attendee);
+        });
+
+        // Create workbook
         const workbook = XLSX.utils.book_new();
-        const worksheet = XLSX.utils.json_to_sheet(excelData);
 
-        // Set column widths
-        worksheet['!cols'] = [
-            { wch: 25 }, // Full Name
-            { wch: 15 }, // Student Number
-            { wch: 15 }, // Course
-            { wch: 12 }, // Year Level
-            { wch: 25 }, // Email
-            { wch: 15 }, // Contact Number
-            { wch: 30 }, // Remarks
-            { wch: 12 }, // QR Code
-            { wch: 20 }, // Time In
-            { wch: 20 }  // Time Out
-        ];
+        // Process each organization
+        // Sort keys to have a consistent order, maybe alphabetical
+        const sortedOrgs = Object.keys(attendeesByOrg).sort();
 
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'Attendance');
+        sortedOrgs.forEach(org => {
+            const orgAttendees = attendeesByOrg[org];
+
+            // Prepare data for this sheet
+            const excelData = orgAttendees.map(attendee => ({
+                'Full Name': attendee.full_name || '',
+                'Student Number': attendee.student_number || '',
+                'Course': attendee.course || '',
+                'Year Level': attendee.year_level || '',
+                'Email': attendee.email || '',
+                'Contact Number': attendee.contact_number || '',
+                'Remarks': attendee.remarks || '',
+                'QR Code': attendee.qr_code_id?.code || '',
+                'Time In': attendee.time_in ? new Date(attendee.time_in).toLocaleString('en-US', { timeZone: 'Asia/Manila' }) : '',
+                'Time Out': attendee.time_out ? new Date(attendee.time_out).toLocaleString('en-US', { timeZone: 'Asia/Manila' }) : ''
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+            // Set column widths
+            worksheet['!cols'] = [
+                { wch: 25 }, // Full Name
+                { wch: 15 }, // Student Number
+                { wch: 15 }, // Course
+                { wch: 12 }, // Year Level
+                { wch: 25 }, // Email
+                { wch: 15 }, // Contact Number
+                { wch: 30 }, // Remarks
+                { wch: 12 }, // QR Code
+                { wch: 20 }, // Time In
+                { wch: 20 }  // Time Out
+            ];
+
+            // Append sheet with Org name (truncate to 31 chars if needed as per Excel limits)
+            const sheetName = org.substring(0, 31);
+            XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+        });
 
         // Generate buffer
         const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
 
         res.header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.header('Content-Disposition', 'attachment; filename=attendance_export.xlsx');
+        res.header('Content-Disposition', 'attachment; filename=attendance_export_by_org.xlsx');
         res.send(buffer);
     } catch (err) {
         res.status(500).json({ message: err.message });
