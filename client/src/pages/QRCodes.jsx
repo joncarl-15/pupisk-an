@@ -34,7 +34,7 @@ function QRCodes() {
     }
 
     const getRegistrationUrl = (code) => {
-        return `${window.location.origin}/register?code=${code}`
+        return `https://pupisk-an-user.vercel.app/register?code=${code}`
     }
 
     const getQRImageUrl = (code) => {
@@ -169,12 +169,17 @@ function QRCodes() {
         }
     }
 
-    const handleUnlock = () => {
+    const handleUnlock = async () => {
         const password = prompt('Enter Admin Password to Unlock Actions:')
-        if (password === 'csc@20252026') {
-            setIsAdminUnlocked(true)
-            toast.success('Admin actions unlocked!')
-        } else if (password !== null) {
+        if (password === null) return
+
+        try {
+            const response = await api.post('/admin/verify', { password })
+            if (response.data.success) {
+                setIsAdminUnlocked(true)
+                toast.success('Admin actions unlocked!')
+            }
+        } catch (error) {
             toast.error('Incorrect Password')
         }
     }

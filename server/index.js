@@ -22,6 +22,9 @@ app.get('/', (req, res) => {
 const qrRoutes = require('./routes/qrcodes');
 const attendeeRoutes = require('./routes/attendees');
 
+const adminRoutes = require('./routes/admin');
+const Admin = require('./models/Admin');
+
 // Middleware to ensure DB is connected for all API routes
 app.use('/api', async (req, res, next) => {
     try {
@@ -33,8 +36,29 @@ app.use('/api', async (req, res, next) => {
     }
 });
 
+// Seed Admin Password if not exists
+const seedAdmin = async () => {
+    try {
+        await dbConnect();
+        const admin = await Admin.findOne();
+        if (!admin) {
+            await Admin.create({ password: 'csc@20252026' });
+            console.log('Admin password initialized');
+        }
+    } catch (error) {
+        console.error('Error seeding admin:', error);
+    }
+};
+
+// Run seed on startup (only if not in Vercel environment context where we might want to be careful, 
+// but for this simple app, it's fine to check on connection or just let the first request handle it indirectly if we wanted.
+// Better to just run it once here if possible, or we can make a specific init route. 
+// Given the constraints, let's just run it.
+seedAdmin();
+
 app.use('/api/qrcodes', qrRoutes);
 app.use('/api/attendees', attendeeRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Only listen if not running on Vercel (Vercel exports the app)
 if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {

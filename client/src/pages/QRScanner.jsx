@@ -127,7 +127,7 @@ function QRScanner() {
     }
 
     const getRegistrationUrl = (code) => {
-        return `${window.location.origin}/register?code=${code}`
+        return `https://pupisk-an-user.vercel.app/register?code=${code}`
     }
 
     const handleTimeIn = async () => {

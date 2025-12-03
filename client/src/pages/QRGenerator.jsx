@@ -51,12 +51,17 @@ function QRGenerator() {
         }
     }
 
-    const handleUnlock = () => {
+    const handleUnlock = async () => {
         const password = prompt('Enter Admin Password to Unlock Generation:')
-        if (password === 'csc@20252026') {
-            setIsAdminUnlocked(true)
-            toast.success('Generation unlocked!')
-        } else if (password !== null) {
+        if (password === null) return
+
+        try {
+            const response = await api.post('/admin/verify', { password })
+            if (response.data.success) {
+                setIsAdminUnlocked(true)
+                toast.success('Generation unlocked!')
+            }
+        } catch (error) {
             toast.error('Incorrect Password')
         }
     }
@@ -67,12 +72,12 @@ function QRGenerator() {
     }
 
     const getQRImageUrl = (code) => {
-        const registrationUrl = `${window.location.origin}/register?code=${code}`
+        const registrationUrl = `https://pupisk-an-user.vercel.app/register?code=${code}`
         return `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(registrationUrl)}`
     }
 
     const getRegistrationUrl = (code) => {
-        return `${window.location.origin}/register?code=${code}`
+        return `https://pupisk-an-user.vercel.app/register?code=${code}`
     }
 
     return (
